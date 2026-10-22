@@ -177,11 +177,6 @@ def test_sign_array_thresholds_return_only_documented_codes(alpha):
     np.testing.assert_array_equal(values, original)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason="sign_table leaves p==0.05 as a numeric string instead of nonsignificant",
-)
 def test_sign_table_classifies_exact_significance_boundaries():
     values = np.array([[1, 0.05, 0.01], [0.05, 1, 0.001], [0.01, 0.001, 1]])
 
