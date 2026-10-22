@@ -29,3 +29,20 @@ jobs:
     - name: Testing with pytest
       run: |
         pytest .
+
+  pandas-compatibility:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.9"
+        cache: 'pip'
+    - name: Install pandas 1.5 compatibility dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install ".[test]" "numpy<2" "pandas==1.5.3"
+    - name: Testing full suite with pandas 1.5
+      run: |
+        pytest .
