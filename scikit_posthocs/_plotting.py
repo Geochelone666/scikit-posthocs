@@ -15,6 +15,8 @@ def sign_array(p_values: Union[List, np.ndarray, DataFrame], alpha: float = 0.05
     Converts an array with p values to a significance array where
     0 is False (not significant), 1 is True (significant),
     and -1 is for diagonal elements.
+    A p value is significant when it is strictly less than ``alpha``;
+    zero is significant for any positive ``alpha``.
 
     Parameters
     ----------
@@ -44,9 +46,9 @@ def sign_array(p_values: Union[List, np.ndarray, DataFrame], alpha: float = 0.05
            [ 1.,  0., -1.]])
     """
     sig_array = np.array(p_values, dtype=float)
-    sig_array[sig_array == 0] = 1e-10
-    sig_array[sig_array > alpha] = 0
-    sig_array[(sig_array < alpha) & (sig_array > 0)] = 1
+    significant = (sig_array >= 0) & (sig_array < alpha)
+    sig_array[sig_array >= alpha] = 0
+    sig_array[significant] = 1
     np.fill_diagonal(sig_array, -1)
 
     return sig_array
