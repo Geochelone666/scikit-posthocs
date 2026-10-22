@@ -94,7 +94,7 @@ def sign_table(
 
     pv = DataFrame(p_values, copy=True) if not isinstance(p_values, DataFrame) else p_values.copy()
 
-    ns = pv > 0.05
+    ns = pv >= 0.05
     three = (pv < 0.001) & (pv >= 0)
     two = (pv < 0.01) & (pv >= 0.001)
     one = (pv < 0.05) & (pv >= 0.01)
