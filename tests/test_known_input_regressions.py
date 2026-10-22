@@ -162,20 +162,19 @@ def test_durbin_nullable_nonpositional_blocks_match_rank_reference():
     np.testing.assert_allclose(actual, expected)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason="sign_array leaves p==alpha unclassified and replaces zero by a fixed 1e-10",
-)
 @pytest.mark.parametrize("alpha", [0.05, 1e-12])
 def test_sign_array_thresholds_return_only_documented_codes(alpha):
-    values = np.array([[1, alpha, 0], [alpha, 1, alpha / 2], [0, alpha / 2, 1]])
+    values = np.array(
+        [[1, alpha, 0], [np.nextafter(alpha, 0), 1, np.nextafter(alpha, 1)], [0, alpha, 1]]
+    )
+    original = values.copy()
     expected = (values < alpha).astype(int)
     np.fill_diagonal(expected, -1)
 
     actual = sp.sign_array(values, alpha=alpha)
 
     np.testing.assert_array_equal(actual, expected)
+    np.testing.assert_array_equal(values, original)
 
 
 @pytest.mark.xfail(
