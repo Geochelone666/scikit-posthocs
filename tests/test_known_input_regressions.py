@@ -49,11 +49,6 @@ def test_tukey_categorical_group_order_matches_scipy(ordered, sort, repeated_ind
     pd.testing.assert_frame_equal(data, original)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=(AssertionError, KeyError),
-    reason="Rank helpers overwrite the user-specified grouping column with temporary scores",
-)
 @pytest.mark.parametrize(
     ("function", "group_col"),
     [
@@ -64,14 +59,21 @@ def test_tukey_categorical_group_order_matches_scipy(ordered, sort, repeated_ind
     ],
 )
 @pytest.mark.parametrize("sort", [False, True])
-def test_temporary_score_column_does_not_overwrite_group_labels(function, group_col, sort):
+@pytest.mark.parametrize("repeated_index", [False, True])
+def test_temporary_score_column_does_not_overwrite_group_labels(
+    function, group_col, sort, repeated_index
+):
     data = long_data(independent_samples())
+    if repeated_index:
+        data.index = np.tile(np.arange(5), 3)
     expected = function(data, val_col="value", group_col="group", sort=sort)
     renamed = data.rename(columns={"group": group_col})
+    original = renamed.copy(deep=True)
 
     actual = function(renamed, val_col="value", group_col=group_col, sort=sort)
 
     pd.testing.assert_frame_equal(actual, expected)
+    pd.testing.assert_frame_equal(renamed, original)
 
 
 @pytest.mark.parametrize("function", [sp.posthoc_dunnett, sp.posthoc_steel])

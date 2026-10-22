@@ -380,12 +380,12 @@ def posthoc_conover(
     x_len = x_groups_unique.size
     x_lens = x.groupby(_group_col, observed=True)[_val_col].count()
 
-    x["ranks"] = x[_val_col].rank()
-    x_ranks_avg = x.groupby(_group_col, observed=True)["ranks"].mean()
-    x_ranks_sum = x.groupby(_group_col, observed=True)["ranks"].sum()
+    ranks = x[_val_col].rank()
+    x_ranks_avg = ranks.groupby(x[_group_col], observed=True).mean()
+    x_ranks_sum = ranks.groupby(x[_group_col], observed=True).sum()
 
     # ties
-    vals = x["ranks"].value_counts(sort=False).to_numpy()
+    vals = ranks.value_counts(sort=False).to_numpy()
     tie_sum = np.sum(vals**3 - vals)
     tie_sum = 0 if not tie_sum else tie_sum
     x_ties = np.min([1.0, 1.0 - tie_sum / (n**3.0 - n)])
@@ -399,7 +399,7 @@ def posthoc_conover(
     if x_ties == 1:
         S2 = n * (n + 1.0) / 12.0
     else:
-        S2 = (1.0 / (n - 1.0)) * (np.sum(x["ranks"] ** 2.0) - (n * (((n + 1.0) ** 2.0) / 4.0)))
+        S2 = (1.0 / (n - 1.0)) * (np.sum(ranks ** 2.0) - (n * (((n + 1.0) ** 2.0) / 4.0)))
 
     vs = np.zeros((x_len, x_len))
     tri_upper = np.triu_indices(vs.shape[0], 1)
@@ -500,11 +500,11 @@ def posthoc_dunn(
     x_len = x_groups_unique.size
     x_lens = x.groupby(_group_col, observed=True)[_val_col].count()
 
-    x["ranks"] = x[_val_col].rank()
-    x_ranks_avg = x.groupby(_group_col, observed=True)["ranks"].mean()
+    ranks = x[_val_col].rank()
+    x_ranks_avg = ranks.groupby(x[_group_col], observed=True).mean()
 
     # ties
-    vals = x["ranks"].value_counts(sort=False).to_numpy()
+    vals = ranks.value_counts(sort=False).to_numpy()
     tie_sum = np.sum(vals**3 - vals)
     tie_sum = 0 if not tie_sum else tie_sum
     x_ties = tie_sum / (12.0 * (n - 1))
@@ -604,11 +604,11 @@ def posthoc_nemenyi(
     x_len = x_groups_unique.size
     x_lens = x.groupby(_group_col, observed=True)[_val_col].count()
 
-    x["ranks"] = x[_val_col].rank()
-    x_ranks_avg = x.groupby(_group_col, observed=True)["ranks"].mean()
+    ranks = x[_val_col].rank()
+    x_ranks_avg = ranks.groupby(x[_group_col], observed=True).mean()
 
     # ties
-    vals = x["ranks"].value_counts(sort=False).to_numpy()
+    vals = ranks.value_counts(sort=False).to_numpy()
     tie_sum = np.sum(vals**3 - vals)
     tie_sum = 0 if not tie_sum else tie_sum
     x_ties = np.min([1.0, 1.0 - tie_sum / (n**3.0 - n)])
@@ -1892,12 +1892,12 @@ def posthoc_vanwaerden(
     n = x[_val_col].size
     k = groups.size
     r = ss.rankdata(x[_val_col])
-    x["z_scores"] = ss.norm.ppf(r / (n + 1))
+    z_scores = Series(ss.norm.ppf(r / (n + 1)), index=x.index)
 
-    grouped_scores = x.groupby(_group_col, observed=True)["z_scores"]
+    grouped_scores = z_scores.groupby(x[_group_col], observed=True)
     aj = grouped_scores.sum().reindex(groups).to_numpy()
     nj = grouped_scores.count().reindex(groups).to_numpy()
-    s2 = (1.0 / (n - 1.0)) * (x["z_scores"] ** 2.0).sum()
+    s2 = (1.0 / (n - 1.0)) * (z_scores ** 2.0).sum()
     sts = (1.0 / s2) * np.sum(aj**2.0 / nj)
     A = aj / nj
 
