@@ -69,12 +69,13 @@ def outliers_iqr(
     if not np.isfinite(arr).all():
         raise ValueError("x must contain only finite observations; remove missing values explicitly.")
 
-    q1, q3 = np.percentile(arr, [25, 75])
+    standardized = _stable_studentized_values(arr)
+    q1, q3 = np.percentile(standardized, [25, 75])
     iqr = q3 - q1
     ll = q1 - iqr * coef
     ul = q3 + iqr * coef
 
-    non_outlier_mask = (arr >= ll) & (arr <= ul)
+    non_outlier_mask = (standardized >= ll) & (standardized <= ul)
 
     if ret == "indices":
         return np.where(non_outlier_mask)[0]
