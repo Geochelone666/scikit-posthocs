@@ -179,8 +179,8 @@ def outliers_tietjen(
         data to test for an outlier in.
 
     k : int
-        Number of potential outliers to test for. Function tests for
-        outliers in both tails.
+        Integer number of potential outliers to test for, from 1 to len(x)-2.
+        Function tests for outliers in both tails.
 
     hypo : bool = False
         Specifies whether to return a bool value of a hypothesis test result.
@@ -216,8 +216,10 @@ def outliers_tietjen(
     array([-0.44, -0.3 , -0.24, -0.22, -0.13, -0.05,  0.06,  0.1 ,  0.18,
     0.2 ,  0.39,  0.48,  0.63])
     """
-    arr = np.copy(x)
+    arr = _validate_outlier_sample(x, alpha)
     n = arr.size
+    if not isinstance(k, Integral) or isinstance(k, (bool, np.bool_)) or not 1 <= k <= n - 2:
+        raise ValueError("k must be an integer between 1 and len(x)-2.")
 
     def tietjen(x_, k_):
         x_mean = x_.mean()
@@ -230,23 +232,18 @@ def outliers_tietjen(
     simulations = 10000
     e_norm = np.empty(simulations)
 
-    if 0 < k < n:
-        retained = n - k
-        batch_size = 256
-        for start in range(0, simulations, batch_size):
-            stop = min(start + batch_size, simulations)
-            norm = np.random.normal(size=(stop - start, n))
-            means = norm.mean(axis=1, keepdims=True)
-            deviations = np.abs(norm - means)
-            indices = np.argpartition(deviations, retained - 1, axis=1)[:, :retained]
-            kept = np.take_along_axis(norm, indices, axis=1)
-            numerator = np.sum((kept - kept.mean(axis=1, keepdims=True)) ** 2, axis=1)
-            denominator = np.sum((norm - means) ** 2, axis=1)
-            e_norm[start:stop] = numerator / denominator
-    else:
-        # Preserve the legacy behavior for unsupported values of k.
-        for i in np.arange(simulations):
-            e_norm[i] = tietjen(np.random.normal(size=n), k)
+    retained = n - k
+    batch_size = 256
+    for start in range(0, simulations, batch_size):
+        stop = min(start + batch_size, simulations)
+        norm = np.random.normal(size=(stop - start, n))
+        means = norm.mean(axis=1, keepdims=True)
+        deviations = np.abs(norm - means)
+        indices = np.argpartition(deviations, retained - 1, axis=1)[:, :retained]
+        kept = np.take_along_axis(norm, indices, axis=1)
+        numerator = np.sum((kept - kept.mean(axis=1, keepdims=True)) ** 2, axis=1)
+        denominator = np.sum((norm - means) ** 2, axis=1)
+        e_norm[start:stop] = numerator / denominator
 
     CV = np.percentile(e_norm, alpha * 100)
     result = e_x < CV

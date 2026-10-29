@@ -568,3 +568,10 @@ These input checks do not verify the approximate-normality assumption.
 Method references:
 https://www.itl.nist.gov/div898/handbook/eda/section3/eda35h1.htm
 and https://www.itl.nist.gov/div898/handbook/eda/section3/eda35h3.htm.
+
+Tietjen-Moore uses the same finite, nonconstant, real one-dimensional sample
+and alpha validation as Grubbs/ESD. Its k must be an integer in 1..len(x)-2
+so the retained sample has at least two observations. Invalid requests are
+rejected before simulation and do not consume the global NumPy random stream.
+Valid seeded simulation behavior is unchanged; no new RNG API is introduced.
+Method: https://www.itl.nist.gov/div898/handbook/eda/section3/eda35h2.htm.
