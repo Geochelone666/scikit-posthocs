@@ -108,6 +108,11 @@ def _stable_studentized_values(values):
     before centering/squaring to avoid finite-input overflow and underflow.
     Original observations remain separate for returned values and indices.
     """
+    # NumPy retains float16/float32 precision in means, deviations and squares.
+    # Promote only the working array: finite inputs can otherwise overflow or
+    # underflow well below the float64 rescaling thresholds used below.
+    if np.issubdtype(values.dtype, np.floating) and values.dtype.itemsize < 8:
+        values = values.astype(np.float64)
     magnitude = np.max(np.abs(values.astype(float)))
     if magnitude > 1e100 or 0 < magnitude < 1e-100:
         return values / magnitude
