@@ -575,3 +575,10 @@ so the retained sample has at least two observations. Invalid requests are
 rejected before simulation and do not consume the global NumPy random stream.
 Valid seeded simulation behavior is unchanged; no new RNG API is introduced.
 Method: https://www.itl.nist.gov/div898/handbook/eda/section3/eda35h2.htm.
+
+Grubbs/ESD studentized statistics rescale extreme finite magnitudes internally
+before centering and squaring, preventing variance overflow/underflow from
+changing decisions under positive unit scaling. Returned observations remain
+in original units and retain the existing ordering contract. Ordinary-scale
+inputs use the existing arithmetic path. This is not extra input precision or
+a normality check, and does not recover distinctions already lost in the input.
