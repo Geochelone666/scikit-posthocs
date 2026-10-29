@@ -113,7 +113,11 @@ def _stable_studentized_values(values):
     # underflow well below the float64 rescaling thresholds used below.
     if np.issubdtype(values.dtype, np.floating) and values.dtype.itemsize < 8:
         values = values.astype(np.float64)
-    magnitude = np.max(np.abs(values.astype(float)))
+    # Inspect floating magnitudes in their own precision: narrowing longdouble
+    # can turn finite values into infinity or zero before normalization. Integer
+    # values still need conversion before abs (the signed minimum can overflow).
+    magnitude_values = values if np.issubdtype(values.dtype, np.floating) else values.astype(float)
+    magnitude = np.max(np.abs(magnitude_values))
     if magnitude > 1e100 or 0 < magnitude < 1e-100:
         return values / magnitude
     return values
