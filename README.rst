@@ -512,6 +512,19 @@ different from each other:
   4     b
   Name: letters, dtype: str
 
+CLD input validation
+~~~~~~~~~~~~~~~~~~~~
+
+``compact_letter_display`` requires a nonempty square, exactly symmetric
+matrix with finite off-diagonal p-values in [0, 1]. Missing p-values are
+rejected, not interpreted as significant differences. Diagonal values are
+ignored, including the -1 sentinel used by post hoc functions. DataFrame row
+and column labels must be unique and identically ordered; custom names must
+also be unique and match the group count. Alpha must be strictly between
+0 and 1; maxiter must be a nonnegative integer (zero retains the documented
+warning/fallback behavior). Real computed matrices must be made symmetric by
+the caller before use; no averaging or imputation is performed internally.
+
 Citing
 ------
 

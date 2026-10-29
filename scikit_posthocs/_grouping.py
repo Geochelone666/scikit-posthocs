@@ -1,4 +1,5 @@
 import warnings
+from numbers import Integral, Real
 from typing import List, Optional, Union
 
 import numpy as np
@@ -46,7 +47,10 @@ def compact_letter_display(
     Raises
     ------
     ValueError
-        If the number of letter groups exceeds the available alphabet
+        If inputs are invalid, including missing/nonfinite off-diagonal p-values,
+        asymmetric matrices, or mismatched DataFrame labels. Diagonal values
+        are ignored, including -1 sentinels and nonfinite values.
+        Also if the number of letter groups exceeds the available alphabet
         length (52: a-z then A-Z).
 
     Warns
@@ -86,15 +90,38 @@ def compact_letter_display(
     4     b
     Name: letters, dtype: str
     """
-    pv = np.asarray(p_values, dtype=float)
+    if not isinstance(alpha, Real) or isinstance(alpha, (bool, np.bool_)) or not np.isfinite(alpha) or not 0 < alpha < 1:
+        raise ValueError("alpha must be a finite real number strictly between 0 and 1.")
+    if not isinstance(maxiter, Integral) or isinstance(maxiter, (bool, np.bool_)) or maxiter < 0:
+        raise ValueError("maxiter must be a nonnegative integer.")
+    if np.iscomplexobj(p_values):
+        raise ValueError("p_values must be real.")
+    try:
+        pv = np.asarray(p_values, dtype=float)
+    except (TypeError, ValueError) as error:
+        raise ValueError("p_values must be a numeric matrix.") from error
+    if pv.ndim != 2 or pv.shape[0] == 0 or pv.shape[0] != pv.shape[1]:
+        raise ValueError("p_values must be a nonempty square matrix.")
     k = pv.shape[0]
+    off_diagonal = ~np.eye(k, dtype=bool)
+    pairs = pv[off_diagonal]
+    if not np.isfinite(pairs).all() or ((pairs < 0) | (pairs > 1)).any():
+        raise ValueError("Off-diagonal p-values must be finite and between 0 and 1.")
+    if not np.array_equal(pairs, pv.T[off_diagonal]):
+        raise ValueError("p_values must be symmetric.")
+    if isinstance(p_values, DataFrame):
+        if not p_values.index.is_unique or not p_values.index.equals(p_values.columns):
+            raise ValueError("DataFrame row/column labels must be unique and identically ordered.")
 
     if names is None:
         names = list(p_values.index) if isinstance(p_values, DataFrame) else list(range(k))
 
+    if len(names) != k or not Index(names).is_unique:
+        raise ValueError("names must contain one unique label per group.")
+
     # Build "not significantly different" boolean matrix.
-    # Diagonal and negative sentinels (posthoc_* use -1 on diagonal) are non-significant.
-    same = (pv >= alpha) | (pv < 0)
+    # Only the diagonal may contain ignored sentinel values.
+    same = pv >= alpha
     np.fill_diagonal(same, True)
 
     alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
