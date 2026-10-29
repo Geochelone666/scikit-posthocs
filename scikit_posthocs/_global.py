@@ -1,5 +1,5 @@
 from typing import Union, List, Tuple
-from numpy import array, ndarray, log, isfinite, sort, errstate
+from numpy import array, ndarray, log, isfinite, sort, errstate, iscomplexobj
 from scipy.stats import chi2
 
 
@@ -9,6 +9,8 @@ def _validate_pvalues(p_vals: Union[List, ndarray]) -> ndarray:
         "0 and 1; remove invalid values before calling this function"
     )
     try:
+        if iscomplexobj(p_vals):
+            raise ValueError(message)
         arr = array(p_vals, dtype=float)
     except (TypeError, ValueError):
         raise ValueError(message) from None
