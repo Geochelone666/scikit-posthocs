@@ -242,7 +242,8 @@ def outliers_tietjen(
         E = np.sum((z[:-k_] - z[:-k_].mean()) ** 2) / np.sum((z - x_mean) ** 2)
         return E
 
-    e_x = tietjen(arr, k)
+    standardized = _stable_studentized_values(arr)
+    e_x = tietjen(standardized, k)
     simulations = 10000
     e_norm = np.empty(simulations)
 
@@ -266,7 +267,7 @@ def outliers_tietjen(
         return result
     else:
         if result:
-            ind = np.argpartition(np.abs(arr - arr.mean()), -k)[-k:]
+            ind = np.argpartition(np.abs(standardized - standardized.mean()), -k)[-k:]
             return np.delete(arr, ind)
         else:
             return arr
