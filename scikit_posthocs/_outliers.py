@@ -100,6 +100,19 @@ def _validate_outlier_sample(x, alpha):
     return arr.copy()
 
 
+def _stable_studentized_values(values):
+    """Rescale extreme magnitudes only; studentization is scale invariant.
+
+    Keep ordinary inputs bit-for-bit on the existing arithmetic path. Divide
+    before centering/squaring to avoid finite-input overflow and underflow.
+    Original observations remain separate for returned values and indices.
+    """
+    magnitude = np.max(np.abs(values.astype(float)))
+    if magnitude > 1e100 or 0 < magnitude < 1e-100:
+        return values / magnitude
+    return values
+
+
 def outliers_grubbs(
     x: Union[List, np.ndarray], hypo: bool = False, alpha: float = 0.05
 ) -> Union[np.ndarray, bool]:
@@ -144,10 +157,11 @@ def outliers_grubbs(
     [199.31, 199.53, 200.19, 200.82, 201.92, 201.95, 202.18]
     """
     arr = _validate_outlier_sample(x, alpha)
-    deviations = np.abs(arr - np.mean(arr))
+    standardized = _stable_studentized_values(arr)
+    deviations = np.abs(standardized - np.mean(standardized))
     ind = np.argmax(deviations)
     val = deviations[ind]
-    G = val / np.std(arr, ddof=1)
+    G = val / np.std(standardized, ddof=1)
     N = len(arr)
     t_value = t.ppf(1 - alpha / (2 * N), N - 2)
     result = G > (N - 1) / np.sqrt(N) * np.sqrt(t_value**2 / (N - 2 + t_value**2))
@@ -358,7 +372,7 @@ def outliers_gesd(
 
     for i in np.arange(outliers):
         active_indices = np.flatnonzero(active)
-        active_data = data_proc[active_indices]
+        active_data = _stable_studentized_values(data_proc[active_indices])
         abs_d = np.abs(active_data - np.mean(active_data))
 
         # R-value calculation
