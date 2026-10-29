@@ -1,4 +1,5 @@
 from typing import Union, List
+from numbers import Real
 import numpy as np
 from numpy.typing import ArrayLike
 from scipy.stats import t
@@ -43,6 +44,13 @@ def outliers_iqr(
         - Array with indices of outlier elements
           if ``ret`` is set to ``outliers_indices``.
 
+    Raises
+    ------
+    ValueError
+        If observations are empty, nonfinite, nonnumeric, complex or not
+        one-dimensional; if coef is negative/nonfinite or ret is unknown.
+        Missing values are not silently removed or classified as outliers.
+
     Examples
     --------
     >>> import numpy as np
@@ -51,7 +59,15 @@ def outliers_iqr(
     >>> ph.outliers_iqr(x, ret = 'outliers')
     array([12, 23])
     """
+    if ret not in ("filtered", "outliers", "indices", "outliers_indices"):
+        raise ValueError("Unknown IQR return mode.")
+    if not isinstance(coef, Real) or isinstance(coef, (bool, np.bool_)) or not np.isfinite(coef) or coef < 0:
+        raise ValueError("coef must be a finite nonnegative real number.")
     arr = np.asarray(x)
+    if arr.ndim != 1 or arr.size == 0 or not np.issubdtype(arr.dtype, np.number) or np.iscomplexobj(arr):
+        raise ValueError("x must be a nonempty one-dimensional real numeric array.")
+    if not np.isfinite(arr).all():
+        raise ValueError("x must contain only finite observations; remove missing values explicitly.")
 
     q1, q3 = np.percentile(arr, [25, 75])
     iqr = q3 - q1
