@@ -551,3 +551,20 @@ Acknowledgement
 ---------------
 
 Thorsten Pohlert, PMCMR author and maintainer
+
+Inferential outlier input contract
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Grubbs and generalized ESD reject missing/nonfinite, complex, nonnumeric,
+non-one-dimensional or fewer than three observations. Constant input is also
+rejected because the studentized statistic divides by zero; it is not reported
+as a valid nonrejection. Alpha must be a finite real number strictly between
+0 and 1. ESD's maximum candidate count must be an integer in 1..len(x)-2 so
+its final candidate test retains three observations. A constant remainder after
+removing ESD candidates adds no further rejections while preserving earlier
+ones. Missing values must be cleaned explicitly by the caller, not imputed.
+These input checks do not verify the approximate-normality assumption.
+
+Method references:
+https://www.itl.nist.gov/div898/handbook/eda/section3/eda35h1.htm
+and https://www.itl.nist.gov/div898/handbook/eda/section3/eda35h3.htm.

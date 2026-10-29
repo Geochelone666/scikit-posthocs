@@ -1,5 +1,5 @@
 from typing import Union, List
-from numbers import Real
+from numbers import Real, Integral
 import numpy as np
 from numpy.typing import ArrayLike
 from scipy.stats import t
@@ -86,6 +86,20 @@ def outliers_iqr(
         return arr[non_outlier_mask]
 
 
+def _validate_outlier_sample(x, alpha):
+    """Reject undefined tests instead of reporting nonrejection from NaN."""
+    if not isinstance(alpha, Real) or isinstance(alpha, (bool, np.bool_)) or not np.isfinite(alpha) or not 0 < alpha < 1:
+        raise ValueError("alpha must be a finite real number strictly between 0 and 1.")
+    arr = np.asarray(x)
+    if arr.ndim != 1 or arr.size < 3 or not np.issubdtype(arr.dtype, np.number) or np.iscomplexobj(arr):
+        raise ValueError("x must contain at least three one-dimensional real numeric observations.")
+    if not np.isfinite(arr).all():
+        raise ValueError("Observations must be finite; remove missing values explicitly.")
+    if np.all(arr == arr[0]):
+        raise ValueError("The test statistic is undefined for constant observations.")
+    return arr.copy()
+
+
 def outliers_grubbs(
     x: Union[List, np.ndarray], hypo: bool = False, alpha: float = 0.05
 ) -> Union[np.ndarray, bool]:
@@ -129,7 +143,7 @@ def outliers_grubbs(
     >>> ph.outliers_grubbs(x).tolist()
     [199.31, 199.53, 200.19, 200.82, 201.92, 201.95, 202.18]
     """
-    arr = np.copy(x)
+    arr = _validate_outlier_sample(x, alpha)
     deviations = np.abs(arr - np.mean(arr))
     ind = np.argmax(deviations)
     val = deviations[ind]
@@ -324,8 +338,10 @@ def outliers_gesd(
               4           2.81        3.136
               5          2.816        3.128
     """
+    data_proc = _validate_outlier_sample(x, alpha)
+    if not isinstance(outliers, Integral) or isinstance(outliers, (bool, np.bool_)) or not 1 <= outliers <= data_proc.size - 2:
+        raise ValueError("outliers must be an integer between 1 and len(x)-2.")
     rs, ls = np.zeros(outliers, dtype=float), np.zeros(outliers, dtype=float)
-    data_proc = np.copy(x)
     argsort_index = np.argsort(data_proc)
     data = data_proc[argsort_index]
     sorted_positions = np.empty(data_proc.size, dtype=np.intp)
@@ -349,7 +365,9 @@ def outliers_gesd(
         abs_d = np.abs(active_data - np.mean(active_data))
 
         # R-value calculation
-        R = np.max(abs_d) / np.std(active_data, ddof=1)
+        # A constant remainder has no further candidate; retain prior rejections.
+        sd = np.std(active_data, ddof=1)
+        R = np.max(abs_d) / sd if sd > 0 else 0.0
         rs[i] = R
 
         # Remove the observation that maximizes |xi − xmean|
